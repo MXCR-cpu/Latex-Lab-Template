@@ -1,0 +1,34 @@
+\begin{figure}[H]
+  \centering
+  \caption{Negative Feedback Op-Amp Circuit}
+  \begin{circuitikz}[american voltages]
+    \draw (0,0) node[op amp] (opamp) {}
+          (opamp.+)   to ++ (-0.5,0) coordinate (V+)
+          (opamp.-)   to ++ (-0.5,0) coordinate (V-)
+          (opamp.out) to ++ (1,0) coordinate (Vo)
+
+          (V+) to [V,l=$v_{in}$] ++ (0,-2) to node[ground] ++ (0,0)
+          (V-) to [short] ++ (0,1) to [short] ++ (3,0) |- (Vo)
+          (Vo) to [open,v=$v_{out}$,o-o] ++ (0,-2) to node[ground] ++ (0,-1);
+    \end{circuitikz}
+\end{figure}
+
+
+  %\begin{figure}[H]
+  %  \centering
+  %  \caption{Ideal Op-Amp Model}
+  %  \label{fig:rc_circuit}
+  %  \begin{circuitikz}[american voltages]
+  %    \draw (0,0) coordinate(V+) to [short] (1,0)
+  %                to [R, l=$R_f=\infty$] (1,2)
+  %                to [short] coordinate(V-) (0,2);
+  %    \draw (5,1) coordinate(V_o) to [R, l=$R_o$] (3,1)
+  %                to [short] ++ (0,-1)
+  %                to [american controlled voltage source, l=$A_{OL}\left(V_{+}-V_{-}\right)$] ++ (0,-1)
+  %                to node[ground]{} ++(0,-1);
+  %
+  %    \filldraw (V+) node[anchor=east] {$v_{-}(t)$};
+  %    \filldraw (V-) node[anchor=east] {$v_{+}(t)$};
+  %    \filldraw (V_o) node[anchor=west] {$v_{o}(t)$};
+  %  \end{circuitikz}
+  %\end{figure}

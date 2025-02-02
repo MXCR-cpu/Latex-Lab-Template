@@ -1,0 +1,18 @@
+\newcommand{\image}[3]{
+  \def\firstString{#1}
+  \def\secondString{#2}
+  \def\width{14cm}
+  \def\height{7cm}
+  \begin{figure}[H]
+    \centering
+    \caption{\firstString}
+    \includegraphics[
+      width=\width,
+      height=\height,
+      keepaspectratio=true
+    ]{./images/\secondString}
+    \begin{center}
+      \textit{#3}
+    \end{center}
+  \end{figure}
+}

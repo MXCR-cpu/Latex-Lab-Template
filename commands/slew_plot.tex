@@ -1,0 +1,38 @@
+\newcommand{\dataslewplot}[5]{%
+  \def\firstString{#2}
+  \def\secondString{#3}
+  \def\xmax{1000}
+  \def\xmin{0.1}
+  \def\width{14cm}
+  \def\height{7cm}
+
+  \begin{figure}[H]
+    \centering
+    \caption{#1}
+    \label{fig:#2_#3_slew_plot}
+    \begin{tikzpicture}
+      \begin{axis}[
+        width=\width,
+        height=\height,
+        xmode=log,
+        axis y line*=left,
+        ymin = #4, ymax = #5,
+        xmin=\xmin, xmax=\xmax,
+        scale only axis,
+        xlabel={Frequency (kHz)},
+        ylabel={Slew Rate (V/ms)},
+        log origin=infty, 
+        grid=both,
+      ]
+
+        \addplot [blue, only marks] table[
+          only marks,
+          x expr={\thisrow{Frequency (kHz)}},
+          y expr={\thisrow{Slew_Rate(V/ms)}},
+          col sep=semicolon
+        ] {./data/\firstString_\secondString.csv};
+
+      \end{axis}
+    \end{tikzpicture}
+  \end{figure}
+}
