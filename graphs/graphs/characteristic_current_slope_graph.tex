@@ -1,0 +1,24 @@
+\begin{figure}[H]
+  \centering
+  \caption{The kk of Diode \(D\) at Different Voltages}
+  \begin{tikzpicture}
+    \label{experiment_2}
+    \pgfplotsset{set layers} 
+    \begin{axis}[
+      width=\plotWidth,
+      height=\plotHeight,
+      scale only axis,
+      xlabel={Voltage Across Diode \(V_{DQ}\) (mV)},
+      ylabel={Resistor Approximation \(r_{D}\) (Ohm)},
+      legend to name=plotlegend1
+    ]
+      \addplot [red, only marks] table[
+        x expr={\thisrow{V_{DQ}(V)} * 1000},
+        y expr={((2.01 * 0.026) * exp(-\thisrow{V_{DQ}(V)}/(2.01 * 0.026))) / (0.000000007020)},
+        col sep=comma
+      ] {./data/experiment_2.csv};
+      \addlegendentry{Approximate Resistance of \(r_{D}\) at Voltage};
+    \end{axis}
+    \node at (current bounding box.north) [anchor=north,xshift=50pt,yshift=-5pt] {\ref{plotlegend1}};
+  \end{tikzpicture}
+\end{figure}

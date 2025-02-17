@@ -1,0 +1,27 @@
+\begin{figure}[H]
+  \centering
+  \caption{DC Diode Circuit}
+  \begin{circuitikz}[american voltages]
+    \draw(0,0) ++ (-6,5.5) node[vcc] (Vc) {15\,\textnormal{V}} to[pR,l_=${P=10\,k\Omega}$,n=POT] ++ (0,-2) 
+                                                                node[ground] {} ++ (0,0)
+
+          (Vc) ++ (2.5,-1.5) node[op amp,yscale=-1] (U2) {}
+          (0,0) coordinate (Vd) to [R,l=${R_{B}=1\,k\Omega}$,v<=$V_{R_{B}}$] ++ (0,4) coordinate (Vb) |- (U2.out)
+
+          (U2.-)   |- ++ (2.25,-2) -| (U2.out)
+          (U2.+)   |- (POT.wiper)
+          (U2.down) --++ (0,0.25)  node[vcc] {15\,\textnormal{V}}
+          (U2.up)   --++ (0,-0.25) node[vee] {-15\,\textnormal{V}}
+
+          (Vd) to[diode,l=$D$,v=${V_{D}}$] ++ (0,-2) 
+               node[ground] {} ++ (0,0);
+
+          \filldraw(U2)  node {$U_{2}$};
+          \filldraw(Vd)  circle (2pt);
+          \filldraw(Vb)  node[anchor=west] {$V_{B}$};
+
+    \end{circuitikz}
+    \begin{center}
+      \textit{All positive and negative lines supplied to the op-amps are bypassed with a \(100\text{nF}\) capacitors not shown.}
+    \end{center}
+\end{figure}

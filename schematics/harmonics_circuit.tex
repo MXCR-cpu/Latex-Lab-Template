@@ -1,0 +1,33 @@
+\begin{figure}[H]
+  \centering
+  \caption{Biased AC Diode Circuit}
+  \label{schematic:biased_ac_diode_circuit}
+  \begin{circuitikz}[american voltages]
+    \draw(0,0) coordinate (Vd) to[short] ++ (-2,0)
+                               to[open,v=$v_{gen}(t)$]  ++ (0,-2)
+                               node[ground] {} ++ (0,0)
+
+          (Vd) ++ (3,-0.5) node[op amp,yscale=-1] (U3) {}
+          (Vd) |- (U3.+)
+          (U3.-)   to[short] ++ (0,-2.5) coordinate (J1)
+                   to[R,l=${R_{3}=10\,k\Omega}$] ++ (2.75,0) |- (U3.out)
+          (J1)     to[R,l=${R_{2}=1\,k\Omega}$] ++ (0,-2)
+                   node[ground] {} ++ (0,0)
+          (U3.out) to[short] ++ (1,0) coordinate (Vx)
+          (U3.down) --++ (0,0.25)  node[vcc] {15\,\textnormal{V}} ++ (0,0)
+          (U3.up)   --++ (0,-0.25) node[vee] {-15\,\textnormal{V}} ++ (0,0)
+
+          (Vd) to[diode,l=$D$,v=${V_{D}}$] ++ (0,-2) 
+               node[ground] {} ++ (0,0)
+
+          \filldraw(U3)  node {$U_{3}$};
+          \filldraw(Vx)  circle (2pt) node[anchor=west] {$V_{x}$};
+          \filldraw(Vd)  circle (2pt);
+
+    \end{circuitikz}
+    \begin{center}
+      \textit{\(v_{\text{gen}}(t)\) is a small AC signal.}
+
+      \textit{All positive and negative lines supplied to the op-amps are bypassed with a \(100\text{nF}\) capacitors not shown.}
+    \end{center}
+\end{figure}

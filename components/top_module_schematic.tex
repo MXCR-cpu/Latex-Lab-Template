@@ -1,0 +1,18 @@
+\ctikzset{
+    square component/.style={
+        generic,
+        generic/width=0.6,
+        generic/height=0.6,
+        generic/empty=true,
+        generic/square=true
+    }
+}
+
+\begin{figure}[H]
+  \centering
+  \caption{Top Module Schematic}
+  \label{fig:top_module_schematic}
+  \begin{circuitikz}[american voltages]
+    \draw (0,0) to[square component] (2,0);
+  \end{circuitikz}
+\end{figure}

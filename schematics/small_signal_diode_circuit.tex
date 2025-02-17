@@ -1,0 +1,54 @@
+\begin{figure}[H]
+  \centering
+  \caption{Biased AC Diode Circuit}
+  \label{schematic:biased_ac_diode_circuit}
+  \begin{circuitikz}[american voltages]
+    \draw(0,0) node[op amp,yscale=-1] (U1) {}
+          (U1.+)   to[short] ++ (-1,0)
+                   to[open,v=${v_{\text{gen}}(t)}$,o-o] ++ (0,-2)
+                   node[ground] {} ++ (0,0)
+          (U1.-)   to[short] ++ (0,-2)
+                   to[short] ++ (2.25,0) |- (U1.out)
+          (U1.out) to[R,l = ${R_{1}=100\,\Omega}$] ++ (2,0)
+                   to[polar capacitor,l=${C=10\,\mu F}$,v<=${}$] ++ (3,0) coordinate (Vd)
+          (U1.down) --++ (0,0.25)  node[vcc] {15\,\textnormal{V}}
+          (U1.up)   --++ (0,-0.25) node[vee] {-15\,\textnormal{V}}
+          
+          (Vd) ++ (-6,5.5) node[vcc] (Vc) {15\,\textnormal{V}} to[pR,l_=${P=10\,k\Omega}$,n=POT] ++ (0,-2) 
+                                                                node[ground] {} ++ (0,0)
+          (Vc) ++ (2.5,-1.5) node[op amp,yscale=-1] (U2) {}
+          (Vd) to [R,l=${R_{B}=1\,k\Omega}$,v<=$V_{R_{B}}$] ++ (0,4) coordinate (Vb) |- (U2.out)
+
+          (U2.-)   |- ++ (2.25,-2) -| (U2.out)
+          (U2.+)   |- (POT.wiper)
+          (U2.down) --++ (0,0.25)  node[vcc] {15\,\textnormal{V}}
+          (U2.up)   --++ (0,-0.25) node[vee] {-15\,\textnormal{V}}
+
+          (Vd) ++ (3,-0.5) node[op amp,yscale=-1] (U3) {}
+
+          (Vd) |- (U3.+)
+          (U3.-)   to[short] ++ (0,-2.5) coordinate (J1)
+                   to[R,l=${R_{3}=10\,k\Omega}$] ++ (2.75,0) |- (U3.out)
+          (J1)     to[R,l=${R_{2}=1\,k\Omega}$] ++ (0,-2)
+                   node[ground] {} ++ (0,0)
+          (U3.out) to[short] ++ (1,0) coordinate (Vx)
+          (U3.down) --++ (0,0.25)  node[vcc] {15\,\textnormal{V}}
+          (U3.up)   --++ (0,-0.25) node[vee] {-15\,\textnormal{V}}
+
+          (Vd) to[diode,l=$D$,v=${V_{D}}$] ++ (0,-2) 
+               node[ground] {} ++ (0,0);
+
+          \filldraw(U1)  node {$U_{1}$};
+          \filldraw(U2)  node {$U_{2}$};
+          \filldraw(U3)  node {$U_{3}$};
+          \filldraw(Vx)  circle (2pt) node[anchor=west] {$V_{x}$};
+          \filldraw(Vd)  circle (2pt);
+          \filldraw(Vb)  node[anchor=west] {$V_{B}$};
+
+    \end{circuitikz}
+    \begin{center}
+      \textit{\(v_{\text{gen}}(t)\) is an AC signal of \(9\text{mV}\) operating at \(\text{1\,\text{kHz}}\).}
+
+      \textit{All positive and negative lines supplied to the op-amps are bypassed with a \(100\text{nF}\) capacitors not shown.}
+    \end{center}
+\end{figure}

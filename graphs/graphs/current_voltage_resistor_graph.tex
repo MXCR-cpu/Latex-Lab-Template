@@ -1,0 +1,48 @@
+\begin{figure}[H]
+  \centering
+  \caption{Resistance \(r_{D}\) Approximation of Diode \(D\) at Different Voltages \(v_{D}\)}
+  \begin{tikzpicture}
+    \label{experiment_2_der}
+    \pgfplotsset{set layers} 
+    \begin{axis}[
+      width=\plotWidth,
+      height=\plotHeight,
+      xmin= 440, xmax= 740,
+      ymin = 0, ymax = 1200,
+      scale only axis,
+      xlabel={Voltage Across Diode \(V_{DQ}\) (mV)},
+      ylabel={Resistance \(r_{d}\) Approximation (Ohm)},
+      legend to name=plotlegend1
+    ]
+      \addplot [red, only marks] table[
+        x expr={\thisrow{V_{DC}(V)} * 1000},
+        y expr={\thisrow{r_{d}(Ohm)}},
+        col sep=comma
+      ] {./data/experiment_2_der.csv};
+      \addlegendentry{Resistance Approximation};
+    \end{axis}
+    \node at (current bounding box.north) [anchor=north,xshift=50pt,yshift=-5pt] {\ref{plotlegend1}};
+
+    \begin{axis}[
+      width=\width,
+      height=\height,
+      xmode=log,
+      ymin = #5, ymax = #6,
+      xmin=\xmin, xmax=\xmax,
+      scale only axis,
+      ylabel={Phase (degree)},
+      axis y line*=right,
+      axis x line=none,
+      legend to name=plotlegend2
+    ]
+
+      \addplot [red, only marks] table[
+        x expr={\thisrow{Frequency (kHz)}},
+        y expr={\thisrow{Phase(degree)}},
+        col sep=semicolon
+      ] {./data/experiment_2.csv};
+      \addlegendentry{Phase $(^{\circ})$};
+
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}

@@ -1,0 +1,282 @@
+\documentclass[stu,12pt,floatsintext]{apa7}
+
+\input{imports.tex}
+\input{settings.tex}
+\input{commands.tex}
+\input{title_page.tex}
+
+\begin{document}
+
+\maketitle
+
+\section{Description}
+
+Lab 4 was comprised of the task of generating a FPGA game program for the Basys 3 FPGA board that made use of only five distint inputs --three switches and two buttons-- that and couple outputs in the form of the leds and hex displays that behaved and responded with relevant information. The core of this task was situated in the design, configuration, and implementation of an internal state machine that would track and update the current state of the game in response to player inputs and a timer output. Once implemented, the FPGA would reward the player a point who was first to flip their switch at the point the the governing LEDs turned off. 
+
+\newpage
+\fullPageImage{Top Module Schematic}{top_module_schematic.png}{90}{5cm}
+
+\section{Design}
+\subsection{The Top Module}
+
+The top module housed the main logic that would supply the means of connecting distinct modules into cohesive bitstream file. As such, the top module would provide both bridges between modules as well as individual bit logic if a new module was not needed.
+
+\subsection{LSFR Module}
+\image{LSFR Module Schematic}{lsfr_module_schematic.jpg}{}
+
+The LSFR module that produces a rapid succession of pseudorandom bits via a series of bitshift flip-flops that XOR the result of said random bits into different position. Not much can be state about this module, other than it was easy to implement and did not fail during any simulation or use-test.
+
+\subsection{Edge Detector Module}
+\image{Edge Detector Module Schematic}{edge_detector_module_schematic.jpg}{}
+
+Originally, the edge detector was not included in the project but was then introduced when the design of the state machine module was alterated to output a single bus that represented the current state. In this instance, the single bus state would provide the necessary signal to update the rest of the circuit; the problem with this method, however, is that counter module only reponds to a single clock cycle input, any multi-cycle inputs would increment the counter far past the single, desired increment. To counter this problem, the edge detector module was introduced to track the change of state to send the appropriate single clock-cycle signal. The edge detector also helped ensure that distinct state transitions were the only events that could affect other modules, nullifying non-transitions under certain actions. In previous labs, this module was configured to work on negative clock edges; in this lab, the module was altered to function on the positive clock edge with fewer flip-flops.
+
+\subsection{Time Counter Module}
+\label{subsec:time_counter_module}
+\image{Time Counter Module Schematic}{time_counter_module_schematic.jpg}{}
+
+The premise of the time counter was that it was load pseudorandom bits from the LSFR module when the button U signal was given and output directly and imediately begin the countdown sequence. The sequence would terminate at zero and then on send a TimeUp signal to the State Machine Module that would then change the way a given action was interpreted. Originally, there was some errors in the construction of this module: the load signal was not properly received and the counter would decrement past zero to the max value. The load signal error was resolved by retools the internal flip-flop reset and enable ports. Similarly, the decrement error was resolved by examining the modules that the counter depended on and retooling them, namely the Fifthteen-Bit Counter Module. 
+
+\subsection{Fifthteen Bit Counter Module}
+\label{subsec:fifthteen-bit_counter_module}
+\image{15-bit Counter Module Schematic}{fifthteen-bit_counter_module_schematic.jpg}{}
+
+This module was an important of a previous lab where the main aim was its construction. Problems arose out of the fact that that previous lab had different objective than the current one and would thus implement a distinct behavior that allowed the decrement counter to decrement past one. Although this was initially correct, this previously held intention would cause the parent Time Counter Module~\ref{subsec:time_counter_module} to fail its task of counting until zero. The fix was administered by ensuring that the internal five-bit decrement counters also considered their output dtc signals being off as an additionally decrement requirement.
+
+\subsection{Five Bit Counter Module}
+\image{5-bit Counter Module Schematic}{five-bit_counter_module_schematic.jpg}{}
+
+The Five Bit Counter Module was updated to reflect a change that was implemented throughout the project which was a global flip-flop reset signal. Any module that contained flip-flops or contained a module that contained flip-flops was to include an input reset terminal that, when on, would reset all flip-flops within scope. This was done after issues with weird time behaviors and improper counter reset arose out of usage with the previous implementation.
+
+\subsection{State Machine Module}
+\image{State Machine Module Schematic}{state_machine_module_schematic.jpg}{}
+
+The the State Machine Module is the very core of the project. Originally, it was described as a module that would have multiple input and output ports, each reflecting either the inputs considered in the state diagram or the expected action that the overall machine was suppose to inhabit. The machine made use of one-hot vector encodings for both the states and actions taken. Unbeknownst to me at the time, this design decision would later inform a redefinition of the program. That later change came after the realization that the sole responsibility of the state machine was to maintain and update state and all other signals were extraneous to that core definition. Given that the state was one-hot vector encoded, the deriviate behaviors could then be based on the individual bit values of the output state. This reconstruction would push all the internal logic to the top module which did require supplemental work, but it made testing and reconfiguring the state machine trival as the only output that mattered was the state output. Furthermore, keeping in line with this testability, the functioning combinatorial logic was then shifted to its own module, further simplifying the implementation of the state machine. The state machine itself was left in Moore configuration but could easily be reconfigured to encompass a Mealy Machine implementation.
+
+To minimize the number of equations needed to define the state machine, we will defined a function \(f\) that describes any instance when any number of multiple inputs is provided.
+
+\begin{equation}
+  f  = \text{btnU} \vee \text{sw[0]} \vee \text{sw[7]} \vee \text{sw[15]}
+\end{equation}
+
+Additionally, variable \(L\) defines if the TimeUp is off which is the time when LEDS 7 and 8 on the board are on.
+
+%
+% State Diagram
+%
+
+\schematic{state_machine}
+
+The formal definition for the previous state diagram is provided below.
+
+\begin{align}
+  \sigma                &= \{\text{btnU}, \text{sw[0]}, \text{sw[7]}, \text{swx[15]}\} \\
+   S                    &= \{A, G_{o}, P_{a}, P_{b}, B_{p}, F\} \\
+   S_{o}                &= A \\
+   \delta(\sigma, S)  & \text{(defintion provided below)}\\
+   F                    &= \{P_{a}, P_{b}, B_{p}\}
+\end{align}
+
+We do not define \(L\) to be a part of the set \(\sigma\) because it is not a user input. Additionally, we ignore \text{sw[3]} in the state diagram becuase its functionality does not impact state. 
+
+%
+% State Descriptions
+%
+
+Looking at \(S\), each state in the diagram serves a distinct function. The \(A\) can be considered as something akin to a `ready' state where the device awaits a start signal provided by \(\text{btnU}\) provided that no other switches are thrown on before hand. In this state, \(\text{leds[7:8]}\) are on and awaiting the start of the game. The \(G_{o}\) state represents the state that encapsulates the actual duration the game is played before user input is supplied. The \(\text{leds[7:8]}\) are on at the entrance of the state but then turn off when the \(\text{time\_up\_i}\) signal is given. The state is left when \(\text{a\_now\_i}\) or \(\text{b\_now\_i}\) signal is given. In the state diagram, the actual switches are considered whereas in the implementation of the statemachine, only the actual player actions are considered. The \(P_{a}\) indicates the state when player A has won a point and their point display is flashing. Likewise, \(P_{b}\) represents a point victory for player B along with their flashing display. State \(B_{p}\) is the state for when both players have won a point at the same time and both their displays are flashing. All three states, \(P_{a}\), \(P_{b}\), and \(B_{p}\) are held until all the switches and button are no longer pressed to transition to the \(A\) state. Finally, state \(F\) arises out of the instance when an switch has flipped during state \(A\) and needs to be reset before the transition to state \(G_{o}\) can be enacted. 
+
+\subsection{State Machine Combinational Module}
+\label{subsec:state_machine_combinational_module}
+\image{State Machine Combinational Module Schematic}{state_machine_combinational_module_schematic.jpg}{}
+
+Being the derivative module of its state machine parent, the importance placed on the State Machine Combinational Module also necessitated a couple of iterations before a satisfactory implementation was achieved. The design of the interface was simple, only two inputs and one output; the logic of the module, required scrutinizing as on a few occassion a non considered action and state pairing lead to non-define null state which was one one-hot vector encoded valid. Fortunately, the internal design of this module made any quick adjustment relatively easily and effortless. Since the state were one-hot vector encoded, each distinct case could be state as the Sum-of-Products result of the supplied actions and state which were also one-hot vector encoded. This lead to a series of simple bit-check statements that would only produce the defined state if both the function and state were valid. This was further simplified by using bit-ranges with OR vector evaluations to check a range of consecutive actions which was especially useful in ensuring certain states would remain in that state when supplied with certain actions.
+
+%
+% State Transition Equations
+%
+
+\begin{align}
+  A     &= \delta\left(L\wedge\text{sw[0]}\wedge\text{sw[15]},      G_{o}\right) \\
+        &= \delta\left(\overline{f},                                A\right) \\
+        &= \delta\left(\overline{f},                                P_{a}\right) \\
+        &= \delta\left(\overline{f},                                P_{b}\right) \\
+        &= \delta\left(\overline{f},                                B_{p}\right) \\
+        &= \delta\left(\overline{f},                                F\right) \\
+  G_{o} &= \delta\left(\text{btnU},                                 A\right) \\
+        &= \delta\left(\text{btnU},                                 G_{o}\right) \\
+  P_{a} &= \delta\left(L\wedge\text{sw[15]},                        G_{o}\right) \\
+        &= \delta\left(\neg L\wedge\text{sw[0]},                    G_{o}\right) \\
+        &= \delta\left(f,                                           P_{a}\right) \\ 
+  P_{b} &= \delta\left(L\wedge\text{sw[0]},                         G_{o}\right) \\
+        &= \delta\left(\neg L\wedge\text{sw[15]},                   G_{o}\right) \\
+        &= \delta\left(f,                                           P_{b}\right) \\
+  B_{p} &= \delta\left(\neg L\wedge\text{sw[0]}\wedge\text{sw[15]}, G_{o}\right) \\
+        &= \delta\left(f,                                           B_{p}\right) \\
+  F     &= \delta\left(\text{sw[0]},                                A\right) \\
+        &= \delta\left(\text{sw[15]},                               A\right) \\
+        &= \delta\left(\text{sw[7]},                                A\right) \\
+        &= \delta\left(f,                                           F\right)
+\end{align}
+
+\section{Testing and Simulation}
+
+%
+% Problems occurred during testing
+% - The fail state did not properly jump back to the ready state despite the design stating otherwise
+% - There were instances when throwing a switch on a won state would not yield the proper change
+% - Originally the period when the qsec_clk module actually began its timer was not accounted for
+% - The actual simulation version of the project is distinct from the one that generates the bitstream
+% - The anodes not actually displaying the values properly
+%
+
+%
+% TODO:
+%
+
+When constructing the simulation aspect of the lab, a small adjustments were made to the main test file to observe all the expected behaviors of the program within the time range allotted in the machine whilst still being able to view other forms waveforms. This involved updating the Time Counter Module to function solely off the \(\text{btnU}\) signal, without utilizing the \(\text{qsec}\) signal which possess quarter second period. This allowed a quick view of the decrement capabilities of the time counter which was useful for remedying the fifthteen-bit counter problem written abouth in the Fifthteen-Bit Counter Module Subsection~\ref{subsec:fifthteen-bit_counter_module}. Similary, the tests were not only helpful in tracking down problematic modules but also in assuring that proper modules were not infact in problematic. One problem that came up in the course of the lab was that the counter was not displaying the correct value on the timer hex display. The simulation was able to demonstrate that it was in fact the anode logic of the board that was in correct and not the
+
+In another instance, the simulations themselves had to be reconsidered in lieu of the non-immediate qsec signal failing to initialize before the first round of tests were given. This had cause an inordinate number of errors and only had been caught when the waveform display had demonstrated its seeming absence of the clock signal from the reset of the logic. 
+
+The bulk of testing for the lab was centered around the examination of the current state of the state machine and whether it was capable of producing the appropriate combinational output whilst transition arppropriately to that new state as written about in State Machine Combinational Module Subsection~\ref{subsec:state_machine_combinational_module}. In one particular instance, the \(A\) state was sufficiently transferring to the \(F\) state but the \(F\) had failed to transfer back. This was because originally the state had not been designed to handle a case where a individual input was given because it was registered as an appropriate player action in a different bit of the one-hot encoded action vector. This had unknowningly force the machine into a undefined state that could not be recovered from in the machine.
+
+\section{Conclusion}
+
+%
+% Things I learned:
+% - How to design better simulation files and test cases to track down suspected errors
+% - How the KISS paradigm was the ideal method to go about component design
+% - Segrate functionality to allow for more easy testing
+% - When conducting the lab, it is important to incrementally design and test each component
+%
+
+In retrospect, the difficulty of the lab was critical in developing and affirming certain practices that would be critial to achieving the target program. These practices were not implemented in previous labs and their new inclusion does mark a stage of HDL familiarity and growth.
+
+Firstly, having efficient testbench design was found to crucial in deciphering the location of bugs. Specifically, two new registers were included in the in the testbench: a \(\text{test case}\) register and \(\text{error}\) register. The \(\text{test case}\) register would increment at the beginning of each new test section of the simulation so that identifying where the actual test began was easier as well as the inputs involved with providing that output. Though not heavily relied upon, the \(\text{error}\) register would compare the expected result of the program with the actual result and signal a on value when they did not match. This would make it easy to quick identify problem areas and the state of program associated with them.
+
+Secondly, it was found, over the course of this lab, that overtly complicated designs were difficult to implement, debug, and utilize. In response, a more substantive methodology, pertaining to the K.I.S.S. paradigm, was adopted to reduce the responsibility of each module to its core functionality in an intelligible manner. This practice was utilized in the creation of the State Machine Module which now serves as inspiration for the practice going forward.
+
+Thirdly, by the nature of the test benches, it was found that decomposing larger, complex modules into smaller modules made testing easier and more succinct. When a particular module demonstrated an incorrect output, the child module could be easily probed to view their results and adjusted in their respective files without distrubing the parent module.
+
+Lastly, the overall conducting of the lab was significant improved by incremenntally developing the modules from the ground up. This simple yet effective process staved off the normal wild complexity associated with changing a behavior of a module that may have impacted other modules in an unforseen manner. Rigorously testing these modules at an earily stage meant that future development would be built on a stable foundation.
+
+\section{Appendix}
+
+%
+% Things to include:
+% - Waveform viewer for certain actions
+% - Schematics for new modules
+% - All verilog source code
+% - Scanned Notebook pages for the lab
+%
+
+\subsection{Certain Actions Waveform View}
+
+\image{Player A Wins}{Player_A_wins.jpg}{In this image, it can be witnesses that \(\text{state\_o}\) transforms from \(G_{o}=\text{0x02}\) into \(P_{a}=\text{0x04}\)}
+\image{Player B Wins}{Player_B_wins.jpg}{In this image, it can be witnesses that \(\text{state\_o}\) transforms from \(G_{o}=\text{0x02}\) into \(P_{b}=\text{0x08}\)}
+\image{Both Players Win}{Both_players_win.jpg}{In this image, it can be witnesses that \(\text{state\_o}\) transforms from \(G_{o}=\text{0x02}\) into \(B_{p}=\text{0x10}\)}
+\image{Both Players Lose}{Both_Players_lose.jpg}{In this image, it can be witnesses that \(\text{state\_o}\) transforms from \(G_{o}=\text{0x02}\) into \(A=\text{0x01}\)}
+
+\subsection{Original Waveform View}
+
+\image{The Original Waveform View}{wave_graph.jpg}{}
+
+\subsection{Scanned Pages}
+\fullPageImage{}{scan_1.png}{0}{0cm}
+\fullPageImage{}{scan_2.png}{0}{0cm}
+\fullPageImage{}{scan_3.png}{0}{0cm}
+\fullPageImage{}{scan_4.png}{0}{0cm}
+
+\subsection{Source Code}
+
+%
+% Note: Project Directory is suppose to be adjacent to source project
+%
+
+\code{test\_sim.v}{../Lab_4/Lab_4.srcs/sim_1/new/test_sim.v}
+\code{qsec\_clks.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Downloads/qsec_clks.v}
+\code{FullAdder\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/imports/new/FullAdder_module.v}
+\code{hex7seg\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/imports/new/hex7seg_module.v}
+\code{countinuous\_counter\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/countinuous_counter_module.v}
+\code{edge\_detector\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/edge_detector_module.v}
+\code{fifthteen-bit\_counter\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/fifthteen-bit_counter_module.v}
+\code{five\_bit\_adder\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/five_bit_adder_module.v}
+\code{five\_bit\_counter\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/five_bit_counter_module.v}
+\code{ring\_counter\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/ring_counter_module.v}
+\code{selector\_module.v}{../Lab_4/Lab_4.srcs/sources_1/imports/Lab3_true.srcs/sources_1/imports/Lab3/Lab3.srcs/sources_1/new/selector_module.v}
+\code{LSFR\_module.v}{../Lab_4/Lab_4.srcs/sources_1/new/LSFR_module.v}
+\code{Time\_Counter\_module.v}{../Lab_4/Lab_4.srcs/sources_1/new/Time_Counter_module.v}
+\code{qsec\_on\_off.v}{../Lab_4/Lab_4.srcs/sources_1/new/qsec_on_off.v}
+\code{state\_machine\_combinatorial.v}{../Lab_4/Lab_4.srcs/sources_1/new/state_machine_combinatorial.v}
+\code{state\_machine\_module.v}{../Lab_4/Lab_4.srcs/sources_1/new/state_machine_module.v}
+\code{top\_main\_module.v}{../Lab_4/Lab_4.srcs/sources_1/new/top_main_module.v}
+
+\end{document}
+
+%% 
+%% Copyright (C) 2019 by Daniel A. Weiss <daniel.weiss.led at gmail.com>
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% Users may freely modify these files without permission, as long as the
+%% copyright line and this statement are maintained intact.
+%% 
+%% This work is not endorsed by, affiliated with, or probably even known
+%% by, the American Psychological Association.
+%% 
+%% This work is "maintained" (as per LPPL maintenance status) by
+%% Daniel A. Weiss.
+%% 
+%% This work consists of the file  apa7.dtx
+%% and the derived files           apa7.ins,
+%%                                 apa7.cls,
+%%                                 apa7.pdf,
+%%                                 README,
+%%                                 APA7american.txt,
+%%                                 APA7british.txt,
+%%                                 APA7dutch.txt,
+%%                                 APA7english.txt,
+%%                                 APA7german.txt,
+%%                                 APA7ngerman.txt,
+%%                                 APA7greek.txt,
+%%                                 APA7czech.txt,
+%%                                 APA7turkish.txt,
+%%                                 APA7endfloat.cfg,
+%%                                 Figure1.pdf,
+%%                                 shortsample.tex,
+%%                                 longsample.tex, and
+%%                                 bibliography.bib.
+%% 
+%%
+%%
+%% This is file `./samples/shortsample.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% apa7.dtx  (with options: `shortsample')
+%% ----------------------------------------------------------------------
+%% 
+%% apa7 - A LaTeX class for formatting documents in compliance with the
+%% American Psychological Association's Publication Manual, 7th edition
+%% 
+%% Copyright (C) 2019 by Daniel A. Weiss <daniel.weiss.led at gmail.com>
+%% 
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License (LPPL), either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in the file:
+%% 
+%% http://www.latex-project.org/lppl.txt
+%% 
+%% Users may freely modify these files without permission, as long as the
+%% copyright line and this statement are maintained intact.
+%% 
+%% This work is not endorsed by, affiliated with, or probably even known
+%% by, the American Psychological Association.
+%% 
+%% ----------------------------------------------------------------------

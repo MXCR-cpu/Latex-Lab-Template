@@ -1,0 +1,7 @@
+\newcommand{\code}[2]{
+  \textbf{#1}
+  \begin{mdframed}
+    \scriptsize
+    \expandafter\inputminted[breaklines,breakanywhere,linenos]{verilog}{#2}
+  \end{mdframed}
+}

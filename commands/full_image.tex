@@ -1,0 +1,19 @@
+\newcommand{\fullPageImage}[4]{
+  \def\firstString{#1}
+  \def\secondString{#2}
+  \def\rotate{#3}
+  \def\width{\paperwidth}
+  \def\height{\paperheight}
+  \setlength{\height}{\paperheight - #4}
+  \newpage
+  \begin{figure}[H]
+    \centering
+    \caption{#1}
+    \includegraphics[
+      angle=\rotate,
+      width=\textwidth,
+      height=\height,
+      keepaspectratio=true
+    ]{./images/\secondString}
+  \end{figure}
+}
