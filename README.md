@@ -10,6 +10,11 @@ Depends on:
 - `find`
 - `awk`
 
+Clone the repository with `git clone` as the directory that you would like to use:
+```sh
+git clone https://github.com/MXCR-cpu/Latex-Lab-Template.git -O <directory name>
+```
+
 Execute (on macOS and Linux):
 ```sh
 ./build.sh
