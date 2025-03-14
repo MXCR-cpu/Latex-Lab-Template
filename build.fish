@@ -14,7 +14,6 @@ function generate_images
 end
 
 function compile_project
-  find commands -type f -iname "*.tex" -exec echo "\\input{{}}" \; > ./commands.tex
   /Library/TeX/texbin/lualatex --shell-escape --output-directory=./build/ ./report.tex
 end
 
